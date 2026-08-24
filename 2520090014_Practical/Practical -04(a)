@@ -1,0 +1,68 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+int main()
+{
+    pid_t child1, child2, child3;
+    int status;
+
+    printf("Parent Process: PID = %d\n", getpid());
+
+    // Create Child 1
+    child1 = fork();
+
+    if (child1 == 0)
+    {
+        printf("Child 1: PID = %d\n", getpid());
+        sleep(2);
+        printf("Child 1 completed\n");
+        exit(1);
+    }
+
+    // Create Child 2
+    child2 = fork();
+
+    if (child2 == 0)
+    {
+        printf("Child 2: PID = %d\n", getpid());
+        sleep(4);
+        printf("Child 2 completed\n");
+        exit(2);
+    }
+
+    // Create Child 3
+    child3 = fork();
+
+    if (child3 == 0)
+    {
+        printf("Child 3: PID = %d\n", getpid());
+        sleep(1);
+        printf("Child 3 completed\n");
+        exit(3);
+    }
+
+    // Parent uses wait()
+    printf("\nParent is using wait()...\n");
+
+    pid_t finished = wait(&status);
+
+    printf("wait(): Child with PID %d completed\n", finished);
+
+    // Parent uses waitpid()
+    printf("\nParent is using waitpid()...\n");
+
+    waitpid(child1, &status, 0);
+    printf("waitpid(): Child 1 with PID %d completed\n", child1);
+
+    waitpid(child2, &status, 0);
+    printf("waitpid(): Child 2 with PID %d completed\n", child2);
+
+    waitpid(child3, &status, 0);
+    printf("waitpid(): Child 3 with PID %d completed\n", child3);
+
+    printf("\nParent: All child processes completed.\n");
+
+    return 0;
+}
