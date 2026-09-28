@@ -1,0 +1,98 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <string.h>
+
+#define FILE_NAME "mmap_test.txt"
+#define FILE_SIZE 100
+
+int main()
+{
+    int fd;
+    char *mapped;
+
+    printf("MEMORY-MAPPED FILE I/O DEMONSTRATION\n");
+    printf("=====================================\n\n");
+
+    /* Step 1: Open/Create file */
+    fd = open(FILE_NAME, O_RDWR | O_CREAT, 0644);
+
+    if (fd == -1)
+    {
+        perror("open");
+        return 1;
+    }
+
+    /* Step 2: Set file size */
+    if (ftruncate(fd, FILE_SIZE) == -1)
+    {
+        perror("ftruncate");
+        close(fd);
+        return 1;
+    }
+
+    /* Step 3: Write initial data */
+    const char *initial_data =
+        "Hello from mmap! Operating Systems Lab.";
+
+    if (write(fd, initial_data, strlen(initial_data)) == -1)
+    {
+        perror("write");
+        close(fd);
+        return 1;
+    }
+
+    /* Step 4: Map file into memory */
+    mapped = mmap(NULL,
+                  FILE_SIZE,
+                  PROT_READ | PROT_WRITE,
+                  MAP_SHARED,
+                  fd,
+                  0);
+
+    if (mapped == MAP_FAILED)
+    {
+        perror("mmap");
+        close(fd);
+        return 1;
+    }
+
+    printf("File mapped successfully.\n\n");
+
+    /* Step 5: Read using memory mapping */
+    printf("Data before modification:\n");
+    printf("%s\n\n", mapped);
+
+    /* Step 6: Modify file through mapped memory */
+    strcpy(mapped,
+           "File modified using memory mapped I/O!");
+
+    /* Step 7: Synchronize changes with file */
+    if (msync(mapped, FILE_SIZE, MS_SYNC) == -1)
+    {
+        perror("msync");
+        munmap(mapped, FILE_SIZE);
+        close(fd);
+        return 1;
+    }
+
+    printf("Data modified successfully using mmap().\n\n");
+
+    /* Step 8: Read modified data */
+    printf("Data after modification:\n");
+    printf("%s\n\n", mapped);
+
+    /* Step 9: Unmap memory */
+    munmap(mapped, FILE_SIZE);
+
+    /* Step 10: Close file */
+    close(fd);
+
+    printf("Memory unmapped successfully.\n");
+    printf("File closed successfully.\n");
+
+    return 0;
+}
